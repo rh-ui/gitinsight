@@ -1,0 +1,6 @@
+.gradle
+build/*
+/cli/build/*
+/api/build/*
+/core/bin/*
+/core/build/*

@@ -13,19 +13,21 @@ class GitHistoryServiceTest {
 
     @Test
     void shouldExtractCommitsFromCurrentRepo() throws IOException {
-        // On pointe sur le repo GitInsight lui-même
-        Path repoPath = Path.of(System.getProperty("user.dir"))
-                            .getParent(); // remonte à la racine du projet
+        Path repoPath = Path.of(System.getProperty("user.dir")).getParent(); // recupere le chemin dyal lproject à analyser , user.dir : katjib dossier courant depuis lequel le test est exécuté, getParent() : remonte d'un nieau
 
-        GitHistoryService service = new GitHistoryService();
+        GitHistoryService service = new GitHistoryService(); // create service metier 
+
+        /**
+         * Lis l’historique Git du dépôt repoPath
+         * Retourne les 10 derniers commits
+         */
         List<CommitInfo> commits = service.getHistory(repoPath, 10);
 
         assertThat(commits).isNotEmpty();
         assertThat(commits.get(0).hash()).hasSize(40);
         assertThat(commits.get(0).authorName()).isNotBlank();
 
-        // Affiche pour vérifier visuellement
         commits.forEach(c -> System.out.printf("[%s] %s — %s%n",
-            c.date(), c.authorName(), c.message()));
+                c.date(), c.authorName(), c.message()));
     }
 }
