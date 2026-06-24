@@ -12,5 +12,5 @@ public record CommitInfo(
     String authorEmail,
     Instant date,
     String message,
-    List<String> changedFiles
+    List<FileChange> fileChanges
 ) {}

@@ -11,6 +11,7 @@ import org.eclipse.jgit.api.Git;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.gitinsight.core.model.ChangeType;
 import com.gitinsight.core.model.CommitInfo;
 
 /**
@@ -31,11 +32,15 @@ class GitHistoryServiceTest {
 
             assertThat(history).hasSize(1);
             CommitInfo c = history.get(0);
+            assertThat(c.fileChanges()).isNotEmpty();
             assertThat(c.hash()).hasSize(40);
             assertThat(c.authorName()).isEqualTo("Alice");
             assertThat(c.authorEmail()).isEqualTo("alice@example.com");
             assertThat(c.message()).isEqualTo("feat: initial commit");
             assertThat(c.date()).isNotNull();
+            
+
+            
         }
     }
 
@@ -46,9 +51,14 @@ class GitHistoryServiceTest {
 
             List<CommitInfo> history = service.getHistory(repo, 10);
 
-            // Régression : le commit racine n'était pas diffé → ses fichiers ajoutés
-            // étaient perdus, ce qui aurait sous-compté hotspots et bus factor.
-            assertThat(history.get(0).changedFiles()).containsExactly("src/Main.java");
+            assertThat(history.get(0).fileChanges())
+                    .hasSize(1)
+                    .first()
+                    .satisfies(fc -> {
+                        assertThat(fc.path()).isEqualTo("src/Main.java");
+                        assertThat(fc.type()).isEqualTo(ChangeType.ADD);
+                        assertThat(fc.linesAdded()).isGreaterThan(0);
+                    });
         }
     }
 
@@ -61,9 +71,13 @@ class GitHistoryServiceTest {
 
             List<CommitInfo> history = service.getHistory(repo, 10);
 
-            // history.get(0) = commit de suppression (le plus récent).
-            // Régression : on émettait "/dev/null" au lieu du chemin réel.
-            assertThat(history.get(0).changedFiles()).containsExactly("todo.txt");
+            assertThat(history.get(0).fileChanges())
+                    .hasSize(1)
+                    .first()
+                    .satisfies(fc -> {
+                        assertThat(fc.path()).isEqualTo("todo.txt");
+                        assertThat(fc.type()).isEqualTo(ChangeType.DELETE);
+                    });
         }
     }
 
@@ -75,13 +89,15 @@ class GitHistoryServiceTest {
             commit(git, repo, "f3", "3", "c3");
 
             assertThat(service.getHistory(repo, 2)).hasSize(2);
+
+            
         }
     }
 
     @Test
     void rejectsNonPositiveLimit(@TempDir Path repo) {
         assertThatThrownBy(() -> service.getHistory(repo, 0))
-            .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     // --- helpers ---
@@ -97,9 +113,9 @@ class GitHistoryServiceTest {
 
     private void commitStaged(Git git, String message) throws Exception {
         git.commit()
-            .setMessage(message)
-            .setAuthor("Alice", "alice@example.com")
-            .setCommitter("Alice", "alice@example.com")
-            .call();
+                .setMessage(message)
+                .setAuthor("Alice", "alice@example.com")
+                .setCommitter("Alice", "alice@example.com")
+                .call();
     }
 }
