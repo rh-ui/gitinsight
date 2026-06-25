@@ -9,6 +9,7 @@ import java.util.function.UnaryOperator;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -113,6 +114,8 @@ public class GitHistoryService {
                         changedFiles(reader, diffFormatter, commit)));
             }
             return result;
+        } catch (NoHeadException e) {
+            throw new IOException("Le depot ne contient aucun commit : " + repoPath, e);
         } catch (GitAPIException e) {
             throw new IOException("Échec de la lecture de l'historique Git : " + repoPath, e);
         }

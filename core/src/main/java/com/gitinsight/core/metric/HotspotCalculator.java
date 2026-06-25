@@ -31,7 +31,8 @@ public class HotspotCalculator {
                     int authors = authorsByFile.get(path).size();
                     return new Hotspot(path, changes, authors, (double) changes * authors);
                 })
-                .sorted(Comparator.comparingDouble(Hotspot::riskScore).reversed())
+                .sorted(Comparator.comparingDouble(Hotspot::riskScore).reversed()
+                        .thenComparing(Hotspot::path))
                 .limit(topN)
                 .toList();
     }

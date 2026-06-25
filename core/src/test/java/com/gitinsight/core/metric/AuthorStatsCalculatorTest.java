@@ -45,6 +45,24 @@ class AuthorStatsCalculatorTest {
     }
 
     @Test
+    void mergesAuthorsWithSameNormalizedEmail() {
+        List<CommitInfo> commits = List.of(
+                Fixtures.fakeCommit("2024-01-08", "Alice", " Alice@Example.com ",
+                        Fixtures.fileChange("Main.java", 10, 2)),
+                Fixtures.fakeCommit("2024-01-09", "A. Example", "alice@example.com",
+                        Fixtures.fileChange("Service.java", 5, 1)));
+
+        AuthorStats alice = calculator.compute(commits).get(0);
+
+        assertThat(alice.name()).isEqualTo("Alice");
+        assertThat(alice.email()).isEqualTo("alice@example.com");
+        assertThat(alice.commits()).isEqualTo(2);
+        assertThat(alice.filesTouched()).isEqualTo(2);
+        assertThat(alice.linesAdded()).isEqualTo(15);
+        assertThat(alice.linesDeleted()).isEqualTo(3);
+    }
+
+    @Test
     void sumsLinesPerAuthor() {
         List<CommitInfo> commits = List.of(
                 Fixtures.fakeCommit("2024-01-08", "Alice", "alice@example.com",

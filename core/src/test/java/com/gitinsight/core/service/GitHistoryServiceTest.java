@@ -102,6 +102,15 @@ class GitHistoryServiceTest {
     }
 
     @Test
+    void throwsClearMessageOnEmptyRepo(@TempDir Path repo) throws Exception {
+        Git.init().setDirectory(repo.toFile()).call().close();
+
+        assertThatThrownBy(() -> service.getHistory(repo))
+                .isInstanceOf(java.io.IOException.class)
+                .hasMessageContaining("aucun commit");
+    }
+
+    @Test
     void rejectsNonPositiveLimit(@TempDir Path repo) {
         assertThatThrownBy(() -> service.getHistory(repo, 0))
                 .isInstanceOf(IllegalArgumentException.class);
