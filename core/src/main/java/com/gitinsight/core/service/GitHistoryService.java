@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
@@ -45,34 +47,7 @@ public class GitHistoryService {
             throw new IllegalArgumentException("limit doit être > 0, reçu : " + limit);
         }
 
-        // Git.open() remonte jusqu'au .git et gère worktrees/submodules
-        // (où .git est un fichier) ainsi que les dépôts bare.
-        // Un seul ObjectReader et un seul DiffFormatter sont réutilisés sur tout
-        // le parcours — éviter de les recréer par commit est clé sur gros repos.
-        try (Git git = Git.open(repoPath.toFile());
-                ObjectReader reader = git.getRepository().newObjectReader();
-                DiffFormatter diffFormatter = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
-
-            diffFormatter.setRepository(git.getRepository());
-            diffFormatter.setDetectRenames(true);
-
-            Iterable<RevCommit> commits = git.log().setMaxCount(limit).call();
-            List<CommitInfo> result = new ArrayList<>();
-
-            for (RevCommit commit : commits) {
-                List<FileChange> changes = changedFiles(reader, diffFormatter, commit);
-                result.add(new CommitInfo(
-                        commit.getName(),
-                        commit.getAuthorIdent().getName(),
-                        commit.getAuthorIdent().getEmailAddress(),
-                        commit.getAuthorIdent().getWhenAsInstant(),
-                        commit.getShortMessage(),
-                        changes));
-            }
-            return result;
-        } catch (GitAPIException e) {
-            throw new IOException("Échec de la lecture de l'historique Git : " + repoPath, e);
-        }
+        return read(repoPath, log -> log.setMaxCount(limit));
     }
 
     private List<FileChange> changedFiles(ObjectReader reader, DiffFormatter diffFormatter, RevCommit commit)
@@ -110,30 +85,32 @@ public class GitHistoryService {
             case MODIFY -> ChangeType.MODIFY;
             case DELETE -> ChangeType.DELETE;
             case RENAME -> ChangeType.RENAME;
-            case COPY -> ChangeType.MODIFY;
+            case COPY -> ChangeType.ADD;
         };
     }
 
     public List<CommitInfo> getHistory(Path repoPath) throws IOException {
+        return read(repoPath, UnaryOperator.identity());
+    }
+
+    private List<CommitInfo> read(Path repoPath, UnaryOperator<LogCommand> configure) throws IOException {
         try (Git git = Git.open(repoPath.toFile());
                 ObjectReader reader = git.getRepository().newObjectReader();
                 DiffFormatter diffFormatter = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
 
             diffFormatter.setRepository(git.getRepository());
             diffFormatter.setDetectRenames(true);
-
-            Iterable<RevCommit> commits = git.log().call();
+            Iterable<RevCommit> commits = configure.apply(git.log()).call();
             List<CommitInfo> result = new ArrayList<>();
 
             for (RevCommit commit : commits) {
-                List<FileChange> changes = changedFiles(reader, diffFormatter, commit);
                 result.add(new CommitInfo(
                         commit.getName(),
                         commit.getAuthorIdent().getName(),
                         commit.getAuthorIdent().getEmailAddress(),
                         commit.getAuthorIdent().getWhenAsInstant(),
                         commit.getShortMessage(),
-                        changes));
+                        changedFiles(reader, diffFormatter, commit)));
             }
             return result;
         } catch (GitAPIException e) {

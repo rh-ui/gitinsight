@@ -1,6 +1,5 @@
 package com.gitinsight.core.service;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -11,6 +10,7 @@ import org.eclipse.jgit.api.Git;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.gitinsight.core.helpers.GitTestRepo;
 import com.gitinsight.core.model.ChangeType;
 import com.gitinsight.core.model.CommitInfo;
 
@@ -26,7 +26,7 @@ class GitHistoryServiceTest {
     @Test
     void extractsCommitMetadata(@TempDir Path repo) throws Exception {
         try (Git git = Git.init().setDirectory(repo.toFile()).call()) {
-            commit(git, repo, "README.md", "hello", "feat: initial commit");
+            GitTestRepo.commitFile(git, repo, "README.md", "hello", "feat: initial commit");
 
             List<CommitInfo> history = service.getHistory(repo, 10);
 
@@ -38,16 +38,13 @@ class GitHistoryServiceTest {
             assertThat(c.authorEmail()).isEqualTo("alice@example.com");
             assertThat(c.message()).isEqualTo("feat: initial commit");
             assertThat(c.date()).isNotNull();
-            
-
-            
         }
     }
 
     @Test
     void capturesFilesAddedByRootCommit(@TempDir Path repo) throws Exception {
         try (Git git = Git.init().setDirectory(repo.toFile()).call()) {
-            commit(git, repo, "src/Main.java", "class Main {}", "feat: root");
+            GitTestRepo.commitFile(git, repo, "src/Main.java", "class Main {}", "feat: root");
 
             List<CommitInfo> history = service.getHistory(repo, 10);
 
@@ -65,9 +62,9 @@ class GitHistoryServiceTest {
     @Test
     void capturesDeletedFilePath(@TempDir Path repo) throws Exception {
         try (Git git = Git.init().setDirectory(repo.toFile()).call()) {
-            commit(git, repo, "todo.txt", "a", "feat: add todo");
+            GitTestRepo.commitFile(git, repo, "todo.txt", "a", "feat: add todo");
             git.rm().addFilepattern("todo.txt").call();
-            commitStaged(git, "chore: remove todo");
+            GitTestRepo.commitStaged(git, "chore: remove todo");
 
             List<CommitInfo> history = service.getHistory(repo, 10);
 
@@ -84,13 +81,23 @@ class GitHistoryServiceTest {
     @Test
     void respectsLimit(@TempDir Path repo) throws Exception {
         try (Git git = Git.init().setDirectory(repo.toFile()).call()) {
-            commit(git, repo, "f1", "1", "c1");
-            commit(git, repo, "f2", "2", "c2");
-            commit(git, repo, "f3", "3", "c3");
+            GitTestRepo.commitFile(git, repo, "f1", "1", "c1");
+            GitTestRepo.commitFile(git, repo, "f2", "2", "c2");
+            GitTestRepo.commitFile(git, repo, "f3", "3", "c3");
 
             assertThat(service.getHistory(repo, 2)).hasSize(2);
+        }
+    }
 
-            
+    @Test
+    void returnsFullHistoryWithoutLimit(@TempDir Path repo) throws Exception {
+        try (Git git = Git.init().setDirectory(repo.toFile()).call()) {
+            GitTestRepo.commitFile(git, repo, "f1", "1", "c1");
+            GitTestRepo.commitFile(git, repo, "f2", "2", "c2");
+            GitTestRepo.commitFile(git, repo, "f3", "3", "c3");
+
+            assertThat(service.getHistory(repo)).hasSize(3);
+            assertThat(service.getHistory(repo, 2)).hasSize(2);
         }
     }
 
@@ -98,24 +105,5 @@ class GitHistoryServiceTest {
     void rejectsNonPositiveLimit(@TempDir Path repo) {
         assertThatThrownBy(() -> service.getHistory(repo, 0))
                 .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    // --- helpers ---
-
-    private void commit(Git git, Path repo, String relPath, String content, String message)
-            throws Exception {
-        Path file = repo.resolve(relPath);
-        Files.createDirectories(file.getParent());
-        Files.writeString(file, content);
-        git.add().addFilepattern(relPath).call();
-        commitStaged(git, message);
-    }
-
-    private void commitStaged(Git git, String message) throws Exception {
-        git.commit()
-                .setMessage(message)
-                .setAuthor("Alice", "alice@example.com")
-                .setCommitter("Alice", "alice@example.com")
-                .call();
     }
 }

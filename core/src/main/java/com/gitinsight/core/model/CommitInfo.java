@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * A Java record is a special type of class designed to act as an immutable data carrier while eliminating repetitive boilerplate code.
+ * Snapshot of one Git commit and the file-level changes detected for it.
  */
 public record CommitInfo(
     String hash,
