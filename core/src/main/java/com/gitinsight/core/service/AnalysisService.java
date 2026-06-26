@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 
+import com.gitinsight.core.exception.EmptyRepositoryException;
 import com.gitinsight.core.metric.AuthorStatsCalculator;
 import com.gitinsight.core.metric.HotspotCalculator;
 import com.gitinsight.core.metric.VelocityCalculator;
@@ -29,6 +30,9 @@ public class AnalysisService {
 
     public RepositoryAnalysis analyze(Path repoPath, int topHotspots) throws IOException {
         List<CommitInfo> commits = historyService.getHistory(repoPath);
+        if (commits.isEmpty()) {
+            throw new EmptyRepositoryException("Le depot ne contient aucun commit : " + repoPath);
+        }
 
         Instant first = commits.stream()
                 .map(CommitInfo::date)

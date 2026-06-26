@@ -10,6 +10,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LogCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.NoHeadException;
+import org.eclipse.jgit.errors.RepositoryNotFoundException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -20,6 +21,8 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
 
+import com.gitinsight.core.exception.EmptyRepositoryException;
+import com.gitinsight.core.exception.NotAGitRepositoryException;
 import com.gitinsight.core.model.ChangeType;
 import com.gitinsight.core.model.CommitInfo;
 import com.gitinsight.core.model.FileChange;
@@ -114,8 +117,10 @@ public class GitHistoryService {
                         changedFiles(reader, diffFormatter, commit)));
             }
             return result;
+        } catch (RepositoryNotFoundException e) {
+            throw new NotAGitRepositoryException("Aucun dépôt Git trouvé à ce chemin : " + repoPath, e);
         } catch (NoHeadException e) {
-            throw new IOException("Le depot ne contient aucun commit : " + repoPath, e);
+            throw new EmptyRepositoryException("Le depot ne contient aucun commit : " + repoPath, e);
         } catch (GitAPIException e) {
             throw new IOException("Échec de la lecture de l'historique Git : " + repoPath, e);
         }

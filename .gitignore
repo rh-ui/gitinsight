@@ -5,3 +5,5 @@ build/*
 /core/bin/*
 /core/build/*
 /.vscode/*
+**/bin/*
+**/build/*

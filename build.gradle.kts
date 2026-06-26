@@ -2,6 +2,8 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
     java
+    id("org.springframework.boot") apply false
+    id("io.spring.dependency-management") apply false
 }
 
 subprojects {
