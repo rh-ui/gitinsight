@@ -77,6 +77,15 @@ class AnalyzeCommandTest {
     }
 
     @Test
+    void asciiFlagProducesPureAsciiReport() {
+        var result = run(stubReturningSample(null, null), ".", "--ascii");
+
+        assertThat(result.code()).isZero();
+        assertThat(result.out().chars().allMatch(c -> c < 128)).isTrue(); // 100% ASCII
+        assertThat(result.out()).contains("Velocite");                    // accents pliés
+    }
+
+    @Test
     void topOptionIsForwardedToService() {
         int[] captured = {-1};
 

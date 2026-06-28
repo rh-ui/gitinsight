@@ -19,10 +19,11 @@ class ReportFormatterTest {
 
     @BeforeEach
     void setUp() {
-        // Ansi.OFF injecté → texte brut, sans codes ANSI → assertions stables
+        // Ansi.OFF injecté → texte brut, sans codes ANSI → assertions stables.
+        // ascii=false → rendu Unicode (boîte + barres █).
         var formatter = new ReportFormatter(Ansi.OFF);
         var analysis  = CliFixtures.sampleAnalysis();
-        report = formatter.format(analysis, Path.of("/repos/gitinsight"));
+        report = formatter.format(analysis, Path.of("/repos/gitinsight"), false);
     }
 
     @Test
@@ -77,5 +78,18 @@ class ReportFormatterTest {
         assertThat(report)
             .doesNotContain("src/main/java/com/gitinsight/core/service/AnalysisService.java")
             .contains("…");
+    }
+
+    @Test
+    void asciiModeIsPureAsciiWithFoldedAccents() {
+        var asciiReport = new ReportFormatter(Ansi.OFF)
+            .format(CliFixtures.sampleAnalysis(), Path.of("/repos/gitinsight"), true);
+
+        // Aucun octet > 0x7F → s'affiche pareil sur toutes les pages de code.
+        assertThat(asciiReport.chars().allMatch(c -> c < 128)).isTrue();
+        // Les accents sont pliés : "Vélocité" → "Velocite".
+        assertThat(asciiReport).contains("Velocite").doesNotContain("Vélocité");
+        // Les glyphes Unicode ont laissé place à l'ASCII.
+        assertThat(asciiReport).doesNotContain("█").doesNotContain("─").doesNotContain("╔");
     }
 }

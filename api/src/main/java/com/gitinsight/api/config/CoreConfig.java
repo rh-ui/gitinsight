@@ -8,11 +8,9 @@ import com.gitinsight.core.service.AnalysisService;
 /**
  * Expose les services du module {@code core} comme beans Spring.
  *
- * <p>
  * On déclare le bean ici plutôt que d'annoter {@code AnalysisService} avec
- * {@code @Service} : cela garde {@code core} totalement indépendant de Spring
- * (principe du plan — moteur pur, testable sans framework), tout en permettant
- * l'injection par constructeur dans le contrôleur (et le mock en test).
+ * {@code @Service} : cela garde {@code core} totalement indépendant de Spring,
+ * tout en permettant l'injection par constructeur dans le contrôleur.
  */
 @Configuration
 public class CoreConfig {

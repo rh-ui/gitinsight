@@ -7,3 +7,8 @@ build/*
 /.vscode/*
 **/bin/*
 **/build/*
+
+# Front (web/ — projet Node autonome)
+web/node_modules
+web/dist
+web/.env
