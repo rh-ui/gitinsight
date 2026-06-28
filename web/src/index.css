@@ -1,1 +1,64 @@
-@import "tailwindcss";
+/* Polices du design system « Forge & Flux » : Inter (UI) + JetBrains Mono
+   (données machine : chemins, chiffres, hashes). Les @import de polices
+   DOIVENT précéder tout le reste. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import 'tailwindcss';
+
+/* Mode sombre piloté par une classe `.dark` sur <html> (et non par la seule
+   préférence système) : c'est ce qui rend possible le bouton de bascule. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* --- Tokens de couleur : valeurs CLAIRES (thème par défaut) --- */
+:root {
+  --background: #f8fafc; /* fond de page */
+  --surface: #ffffff; /* cartes / sections */
+  --surface-2: #f1f5f9; /* zébrage / surface alternée */
+  --foreground: #0f172a; /* texte principal */
+  --muted: #64748b; /* texte secondaire */
+  --border: #e2e8f0; /* bordures discrètes */
+}
+
+/* --- Mêmes tokens, valeurs SOMBRES (appliquées sous .dark) --- */
+.dark {
+  --background: #0f172a;
+  --surface: #1e293b;
+  --surface-2: #16202e;
+  --foreground: #e2e8f0;
+  --muted: #94a3b8;
+  --border: #334155;
+}
+
+/* --- Enregistrement des tokens comme utilitaires Tailwind ---
+   `inline` = l'utilitaire référence la variable au point d'usage, donc il
+   capte automatiquement la surcharge `.dark`. Les couleurs de marque et
+   sémantiques sont identiques dans les deux thèmes. */
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+
+  /* Marque : Forge Orange (identique clair/sombre). */
+  --color-primary: #f47d20;
+  --color-primary-hover: #e06d15;
+  --color-on-primary: #ffffff;
+
+  /* Sémantique (risque / vélocité / etc.). */
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+
+  /* Familles de polices. */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Application des tokens de base au body. */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}

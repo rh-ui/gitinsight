@@ -17,12 +17,12 @@ function Card({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-      <div className="text-xs font-medium uppercase tracking-wide text-slate-400">
+    <div className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary">
+      <div className="font-mono text-xs font-bold uppercase tracking-wide text-muted">
         {label}
       </div>
-      <div className="mt-1 text-2xl font-semibold text-slate-100">{value}</div>
-      {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
+      <div className="mt-1 text-2xl font-semibold text-foreground">{value}</div>
+      {hint && <div className="mt-1 text-xs text-muted">{hint}</div>}
     </div>
   );
 }
@@ -34,7 +34,6 @@ function Card({
 export function SummaryCards({ data }: SummaryCardsProps) {
   const { meta, velocity, authors } = data;
 
-  // Dérivés : sommés une seule fois tant que `velocity` ne change pas.
   const { linesAdded, linesDeleted } = useMemo(
     () =>
       velocity.reduce(
@@ -60,9 +59,9 @@ export function SummaryCards({ data }: SummaryCardsProps) {
       <Card
         label="Lignes"
         value={
-          <span>
-            <span className="text-emerald-400">+{formatNumber(linesAdded)}</span>{' '}
-            <span className="text-red-400">−{formatNumber(linesDeleted)}</span>
+          <span className="font-mono">
+            <span className="text-success">+{formatNumber(linesAdded)}</span>{' '}
+            <span className="text-danger">−{formatNumber(linesDeleted)}</span>
           </span>
         }
       />

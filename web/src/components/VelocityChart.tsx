@@ -11,57 +11,55 @@ import {
 } from 'recharts';
 import type { WeeklyVelocity } from '../types/analysis';
 import { formatDate, formatNumber } from '../lib/format';
+import { chartChrome, SERIES } from '../lib/chartColors';
+import { useTheme } from '../theme/ThemeProvider';
 
 interface VelocityChartProps {
   velocity: WeeklyVelocity[];
 }
 
 /**
- * Graphe de vélocité hebdomadaire : barres des lignes ajoutées/supprimées
- * (axe gauche) + ligne des commits (axe droit). Deux axes Y car commits et
- * lignes n'ont pas le même ordre de grandeur.
+ * Vélocité hebdomadaire : barres lignes +/- (axe gauche) + ligne des commits
+ * (axe droit). La « chrome » (grille/axes/tooltip) suit le thème courant.
  */
 export function VelocityChart({ velocity }: VelocityChartProps) {
+  const { theme } = useTheme();
+  const c = chartChrome(theme);
+
   return (
-    <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-      <h2 className="mb-4 text-sm font-semibold text-slate-200">
+    <section className="rounded-lg border border-border bg-surface p-4">
+      <h2 className="mb-4 text-sm font-semibold text-foreground">
         Vélocité hebdomadaire
       </h2>
-      {/* ResponsiveContainer : le graphe s'adapte à la largeur du parent. */}
       <ResponsiveContainer width="100%" height={300}>
         <ComposedChart
           data={velocity}
           margin={{ top: 8, right: 8, bottom: 8, left: 8 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+          <CartesianGrid strokeDasharray="3 3" stroke={c.grid} />
           <XAxis
             dataKey="weekStart"
             tickFormatter={formatDate}
-            tick={{ fill: '#94a3b8', fontSize: 12 }}
-            stroke="#334155"
+            tick={{ fill: c.tick, fontSize: 12 }}
+            stroke={c.axis}
           />
-          {/* Axe gauche : lignes de code. */}
-          <YAxis
-            yAxisId="lines"
-            tick={{ fill: '#94a3b8', fontSize: 12 }}
-            stroke="#334155"
-          />
-          {/* Axe droit : commits. */}
+          <YAxis yAxisId="lines" tick={{ fill: c.tick, fontSize: 12 }} stroke={c.axis} />
           <YAxis
             yAxisId="commits"
             orientation="right"
-            tick={{ fill: '#94a3b8', fontSize: 12 }}
-            stroke="#334155"
+            tick={{ fill: c.tick, fontSize: 12 }}
+            stroke={c.axis}
             allowDecimals={false}
           />
           <Tooltip
             labelFormatter={(label) => formatDate(String(label))}
             formatter={(value: number) => formatNumber(value)}
             contentStyle={{
-              background: '#0f172a',
-              border: '1px solid #334155',
-              borderRadius: 8,
-              color: '#e2e8f0',
+              background: c.tooltipBg,
+              border: `1px solid ${c.tooltipBorder}`,
+              borderTop: `2px solid ${c.tooltipBorder}`,
+              borderRadius: 6,
+              color: c.tooltipText,
             }}
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -69,14 +67,14 @@ export function VelocityChart({ velocity }: VelocityChartProps) {
             yAxisId="lines"
             dataKey="linesAdded"
             name="Lignes ajoutées"
-            fill="#10b981"
+            fill={SERIES.linesAdded}
             radius={[2, 2, 0, 0]}
           />
           <Bar
             yAxisId="lines"
             dataKey="linesDeleted"
             name="Lignes supprimées"
-            fill="#ef4444"
+            fill={SERIES.linesDeleted}
             radius={[2, 2, 0, 0]}
           />
           <Line
@@ -84,7 +82,7 @@ export function VelocityChart({ velocity }: VelocityChartProps) {
             type="monotone"
             dataKey="commits"
             name="Commits"
-            stroke="#818cf8"
+            stroke={SERIES.commits}
             strokeWidth={2}
             dot={false}
           />
