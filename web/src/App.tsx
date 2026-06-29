@@ -19,7 +19,6 @@ function App() {
             <Route path="overview" element={<OverviewPage />} />
             <Route path="authors" element={<AuthorsPage />} />
             <Route path="hotspots" element={<HotspotsPage />} />
-            <Route path="hotspots" element={<HotspotsPage />} />
             <Route path="bus-factor" element={<BusFactorPage />} />
             <Route path="coupling" element={<CouplingPage />} />
             {/* Filet : toute URL inconnue retombe sur la vue d'ensemble. */}

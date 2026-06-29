@@ -57,6 +57,14 @@ export function BusFactorTable({ busFactor }: BusFactorTableProps) {
     }
   }
 
+  if (busFactor.length === 0) {
+    return (
+      <section className="rounded-lg border border-dashed border-border bg-surface p-12 text-center text-muted">
+        Aucune donnée de bus factor (dépôt trop petit ou sans fichiers analysables).
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-lg border border-border bg-surface p-4">
       <h2 className="mb-4 text-sm font-semibold text-foreground">Bus factor</h2>
