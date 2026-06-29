@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Flame, LayoutDashboard, Users, type LucideIcon } from 'lucide-react';
+import { Flame, LayoutDashboard, ShieldAlert, Users, type LucideIcon } from 'lucide-react';
 
 interface NavItem {
   to: string;
@@ -11,6 +11,7 @@ const NAV: NavItem[] = [
   { to: '/overview', label: "Vue d'ensemble", icon: LayoutDashboard },
   { to: '/authors', label: 'Auteurs', icon: Users },
   { to: '/hotspots', label: 'Fichiers à risque', icon: Flame },
+  { to: '/bus-factor', label: 'Bus factor', icon: ShieldAlert },
 ];
 
 /** Barre latérale de navigation entre les vues de l'analyse. */
