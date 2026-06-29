@@ -4,6 +4,8 @@ import { AppLayout } from './components/layout/AppLayout';
 import { OverviewPage } from './pages/OverviewPage';
 import { AuthorsPage } from './pages/AuthorsPage';
 import { HotspotsPage } from './pages/HotspotsPage';
+import { BusFactorPage } from './pages/BusFactorPage';
+import { CouplingPage } from './pages/CouplingPage';
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
             <Route path="overview" element={<OverviewPage />} />
             <Route path="authors" element={<AuthorsPage />} />
             <Route path="hotspots" element={<HotspotsPage />} />
+            <Route path="bus-factor" element={<BusFactorPage />} />
+            <Route path="coupling" element={<CouplingPage />} />
             {/* Filet : toute URL inconnue retombe sur la vue d'ensemble. */}
             <Route path="*" element={<Navigate to="/overview" replace />} />
           </Route>

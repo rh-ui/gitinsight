@@ -26,12 +26,9 @@ public class AnalyzeController {
 
     @PostMapping("/analyze")
     public RepositoryAnalysis analyze(@Valid @RequestBody AnalyzeRequest request) throws IOException {
-        // SECURITY: 'path' est un chemin local arbitraire fourni par le client, ce
-        // qui permet de lire n'importe quel dépôt présent sur la machine hôte.
-        // Acceptable en usage local/dev ; à restreindre (allow-list / sandbox) ou à
-        // remplacer par un clone d'URL distante en dossier temporaire avant prod.
-        // La validation et le mapping des erreurs sont délégués (@Valid +
-        // GlobalExceptionHandler) : le contrôleur ne porte aucune logique.
-        return analysisService.analyze(Path.of(request.path()), request.topHotspots());
+        Path repo = Path.of(request.path());
+        return request.topCoupling() == null
+                ? analysisService.analyze(repo, request.topHotspots())
+                : analysisService.analyze(repo, request.topHotspots(), request.topCoupling());
     }
 }

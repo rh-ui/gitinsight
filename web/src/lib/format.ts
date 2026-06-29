@@ -56,3 +56,24 @@ export const riskDotClasses: Record<RiskLevel, string> = {
   medium: 'bg-amber-400',
   low: 'bg-emerald-500',
 };
+
+const percentFmt = new Intl.NumberFormat('fr-FR', {
+  style: 'percent',
+  maximumFractionDigits: 0,
+});
+
+/** Formate un ratio 0..1 en pourcentage, ex. 0.8 -> "80 %". */
+export function formatPercent(ratio: number): string {
+  return percentFmt.format(ratio);
+}
+
+/**
+ * Niveau de "possession" d'un fichier selon son ownership (bus factor).
+ * ≥ 0.8 → high (rouge, bus factor 1) ; ≥ 0.5 → medium (ambre) ; sinon low (vert).
+ * Réutilise RiskLevel/riskDotClasses : un ownership élevé = un risque élevé.
+ */
+export function ownershipLevel(ownership: number): RiskLevel {
+  if (ownership >= 0.8) return 'high';
+  if (ownership >= 0.5) return 'medium';
+  return 'low';
+}
