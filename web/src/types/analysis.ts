@@ -43,12 +43,15 @@ export interface RepositoryAnalysis {
   velocity: WeeklyVelocity[];
   authors: AuthorStats[];
   hotspots: Hotspot[];
+  busFactor: FileOwnership[];
+  coupling: FileCoupling[];
 }
 
 /** Corps de la requête POST /api/analyze — reflète AnalyzeRequest. */
 export interface AnalyzeRequest {
   path: string;
   topHotspots: number;
+  topCoupling?: number; // optionnel : défaut serveur (30) si absent
 }
 
 /** Corps d'erreur renvoyé en 400/500 — reflète ErrorResponse. */
@@ -56,4 +59,24 @@ export interface ApiError {
   status: number;
   error: string;
   message: string;
+}
+
+/** Propriété des lignes d'un fichier au HEAD — reflète FileOwnership. */
+export interface FileOwnership {
+  path: string;
+  topAuthor: string;
+  topAuthorEmail: string;
+  topAuthorLines: number;
+  totalLines: number;
+  ownership: number; // 0..1
+}
+
+/** Couplage temporel entre deux fichiers — reflète FileCoupling. */
+export interface FileCoupling {
+  fileA: string;
+  fileB: string;
+  coChanges: number;
+  changesA: number;
+  changesB: number;
+  couplingScore: number; // 0..1 (Jaccard)
 }
