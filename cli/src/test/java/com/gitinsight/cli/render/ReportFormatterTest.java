@@ -1,7 +1,5 @@
 package com.gitinsight.cli.render;
 
-import java.nio.file.Path;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +21,7 @@ class ReportFormatterTest {
         // ascii=false → rendu Unicode (boîte + barres █).
         var formatter = new ReportFormatter(Ansi.OFF);
         var analysis  = CliFixtures.sampleAnalysis();
-        report = formatter.format(analysis, Path.of("/repos/gitinsight"), false);
+        report = formatter.format(analysis, "/repos/gitinsight", false);
     }
 
     @Test
@@ -83,7 +81,7 @@ class ReportFormatterTest {
     @Test
     void asciiModeIsPureAsciiWithFoldedAccents() {
         var asciiReport = new ReportFormatter(Ansi.OFF)
-            .format(CliFixtures.sampleAnalysis(), Path.of("/repos/gitinsight"), true);
+            .format(CliFixtures.sampleAnalysis(), "/repos/gitinsight", true);
 
         // Aucun octet > 0x7F → s'affiche pareil sur toutes les pages de code.
         assertThat(asciiReport.chars().allMatch(c -> c < 128)).isTrue();

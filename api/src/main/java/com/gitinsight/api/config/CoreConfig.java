@@ -3,6 +3,7 @@ package com.gitinsight.api.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.gitinsight.api.service.AnalysisJobService;
 import com.gitinsight.core.service.AnalysisService;
 
 /**
@@ -18,5 +19,10 @@ public class CoreConfig {
     @Bean
     AnalysisService analysisService() {
         return new AnalysisService();
+    }
+
+    @Bean
+    AnalysisJobService analysisJobService(AnalysisService analysisService) {
+        return new AnalysisJobService(analysisService);
     }
 }

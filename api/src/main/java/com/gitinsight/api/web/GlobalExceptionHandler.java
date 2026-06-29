@@ -9,9 +9,11 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.gitinsight.api.exception.JobNotFoundException;
 import com.gitinsight.api.web.model.ErrorResponse;
 import com.gitinsight.core.exception.EmptyRepositoryException;
 import com.gitinsight.core.exception.NotAGitRepositoryException;
+import com.gitinsight.core.exception.RemoteRepositoryException;
 
 /**
  * Traduit les exceptions en réponses HTTP cohérentes, centralisées hors du
@@ -21,10 +23,21 @@ import com.gitinsight.core.exception.NotAGitRepositoryException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /** Chemin invalide / pas un dépôt Git / dépôt sans commit → faute du client. */
-    @ExceptionHandler({ NotAGitRepositoryException.class, EmptyRepositoryException.class })
+    /**
+     * Faute du client sur le dépôt fourni : chemin invalide, pas un dépôt Git,
+     * dépôt vide, ou URL distante invalide/injoignable (échec du clonage).
+     */
+    @ExceptionHandler({ NotAGitRepositoryException.class, EmptyRepositoryException.class,
+            RemoteRepositoryException.class })
     public ResponseEntity<ErrorResponse> handleInvalidRepository(IOException e) {
         return badRequest(e.getMessage());
+    }
+
+    /** Identifiant de job d'analyse inconnu (expiré ou erroné). */
+    @ExceptionHandler(JobNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleJobNotFound(JobNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, "Not Found", e.getMessage()));
     }
 
     /** Échec de validation Bean Validation (@NotBlank, @Positive, ...). */

@@ -12,10 +12,12 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.gitinsight.api.service.AnalysisJobService;
 import com.gitinsight.core.exception.NotAGitRepositoryException;
 import com.gitinsight.core.model.AnalysisMeta;
 import com.gitinsight.core.model.FileCoupling;
@@ -32,6 +34,9 @@ class AnalyzeControllerTest {
         @MockitoBean
         AnalysisService analysisService;
 
+        @MockitoBean
+        AnalysisJobService jobService;
+
         @Test
         void returnsAnalysisJsonForValidRequest() throws Exception {
                 AnalysisMeta meta = new AnalysisMeta(
@@ -39,7 +44,7 @@ class AnalyzeControllerTest {
                                 Instant.parse("2024-01-01T00:00:00Z"),
                                 Instant.parse("2024-01-10T00:00:00Z"),
                                 Instant.parse("2024-02-01T00:00:00Z"));
-                given(analysisService.analyze(any(), anyInt())).willReturn(
+                given(analysisService.analyze(any(String.class), anyInt())).willReturn(
                                 new RepositoryAnalysis(meta, List.of(), List.of(), List.of(), List.of(), List.of()));
 
                 mockMvc.perform(post("/api/analyze")
@@ -51,7 +56,7 @@ class AnalyzeControllerTest {
 
         @Test
         void returnsBadRequestWhenPathIsNotARepository() throws Exception {
-                given(analysisService.analyze(any(), anyInt()))
+                given(analysisService.analyze(any(String.class), anyInt()))
                                 .willThrow(new NotAGitRepositoryException(
                                                 "Aucun dépôt Git trouvé à ce chemin : /undefined/path"));
 
@@ -97,7 +102,7 @@ class AnalyzeControllerTest {
                                 meta, List.of(), List.of(), List.of(),
                                 List.of(new FileOwnership("A.java", "Alice", "alice@example.com", 10, 10, 1.0)),
                                 List.of(new FileCoupling("A.java", "B.java", 3, 4, 3, 0.75)));
-                given(analysisService.analyze(any(), anyInt(), anyInt())).willReturn(analysis);
+                given(analysisService.analyze(any(String.class), anyInt(), anyInt())).willReturn(analysis);
 
                 mockMvc.perform(post("/api/analyze")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -108,5 +113,24 @@ class AnalyzeControllerTest {
                                 .andExpect(jsonPath("$.coupling[0].fileA").value("A.java"))
                                 .andExpect(jsonPath("$.coupling[0].fileB").value("B.java"))
                                 .andExpect(jsonPath("$.coupling[0].couplingScore").value(0.75));
+        }
+
+        @Test
+        void asyncReturnsJobId() throws Exception {
+                given(jobService.submit(any(String.class), anyInt(), any())).willReturn("job-123");
+
+                mockMvc.perform(post("/api/analyze/async")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"path\":\"https://github.com/octocat/Hello-World.git\",\"topHotspots\":10}"))
+                                .andExpect(status().isAccepted())
+                                .andExpect(jsonPath("$.jobId").value("job-123"));
+        }
+
+        @Test
+        void statusReturnsNotFoundForUnknownJob() throws Exception {
+                given(jobService.get(any(String.class))).willReturn(null);
+
+                mockMvc.perform(get("/api/analyze/status/does-not-exist"))
+                                .andExpect(status().isNotFound());
         }
 }

@@ -14,9 +14,14 @@ import com.gitinsight.core.metric.CouplingCalculator;
 import com.gitinsight.core.metric.HotspotCalculator;
 import com.gitinsight.core.metric.VelocityCalculator;
 import com.gitinsight.core.model.AnalysisMeta;
+import com.gitinsight.core.model.AuthorStats;
 import com.gitinsight.core.model.CommitInfo;
 import com.gitinsight.core.model.FileChange;
+import com.gitinsight.core.model.FileCoupling;
+import com.gitinsight.core.model.FileOwnership;
+import com.gitinsight.core.model.Hotspot;
 import com.gitinsight.core.model.RepositoryAnalysis;
+import com.gitinsight.core.model.WeeklyVelocity;
 
 public class AnalysisService {
 
@@ -32,6 +37,11 @@ public class AnalysisService {
      * Au-delà, un commit ne contribue pas au pairage de couplage (merges/massifs).
      */
     private static final int MAX_FILES_PER_COMMIT = 50;
+    /**
+     * Nombre d'étapes rapportées par {@link ProgressListener} (hors clonage, qui
+     * est l'étape 0). Sert à calculer un pourcentage côté appelant.
+     */
+    private static final int TOTAL_STEPS = 6;
 
     private final GitHistoryService historyService;
     private final VelocityCalculator velocityCalculator;
@@ -39,6 +49,7 @@ public class AnalysisService {
     private final HotspotCalculator hotspotCalculator;
     private final BlameService blameService;
     private final CouplingCalculator couplingCalculator;
+    private final RepositoryResolver repositoryResolver;
 
     public AnalysisService() {
         this.historyService = new GitHistoryService();
@@ -47,14 +58,64 @@ public class AnalysisService {
         this.hotspotCalculator = new HotspotCalculator();
         this.blameService = new BlameService();
         this.couplingCalculator = new CouplingCalculator();
+        this.repositoryResolver = new RepositoryResolver();
     }
+
+    // ── Points d'entrée par source (String : chemin local OU URL distante) ──────
+
+    /**
+     * Analyse une source fournie sous forme de chaîne : soit un chemin local,
+     * soit une URL distante HTTP(S). Une URL est clonée dans un dossier
+     * temporaire, analysée, puis supprimée — le {@link WorkingCopy} géré en
+     * try-with-resources garantit le nettoyage même en cas d'échec de l'analyse.
+     *
+     * <p>
+     * Point d'entrée privilégié pour la CLI et l'API : il évite de convertir une
+     * URL en {@link Path} (ce qui lèverait {@code InvalidPathException} sous
+     * Windows à cause du « : »).
+     */
+    public RepositoryAnalysis analyze(String source, int topHotspots) throws IOException {
+        return analyze(source, topHotspots, DEFAULT_TOP_COUPLING, ProgressListener.NOOP);
+    }
+
+    public RepositoryAnalysis analyze(String source, int topHotspots, ProgressListener progress) throws IOException {
+        return analyze(source, topHotspots, DEFAULT_TOP_COUPLING, progress);
+    }
+
+    public RepositoryAnalysis analyze(String source, int topHotspots, int topCoupling) throws IOException {
+        return analyze(source, topHotspots, topCoupling, ProgressListener.NOOP);
+    }
+
+    public RepositoryAnalysis analyze(String source, int topHotspots, int topCoupling, ProgressListener progress)
+            throws IOException {
+        if (RepositoryResolver.isRemoteUrl(source)) {
+            // Étape 0 : le clonage peut être long ; on le signale avant de le lancer.
+            progress.onProgress("Clonage du dépôt", 0, TOTAL_STEPS);
+        }
+        try (WorkingCopy workingCopy = repositoryResolver.resolve(source)) {
+            return analyze(workingCopy.path(), topHotspots, topCoupling, progress);
+        }
+    }
+
+    // ── Points d'entrée par chemin local (Path) ────────────────────────────────
 
     /** Surcharge de compatibilité : applique le défaut de couplage. */
     public RepositoryAnalysis analyze(Path repoPath, int topHotspots) throws IOException {
-        return analyze(repoPath, topHotspots, DEFAULT_TOP_COUPLING);
+        return analyze(repoPath, topHotspots, DEFAULT_TOP_COUPLING, ProgressListener.NOOP);
     }
 
     public RepositoryAnalysis analyze(Path repoPath, int topHotspots, int topCoupling) throws IOException {
+        return analyze(repoPath, topHotspots, topCoupling, ProgressListener.NOOP);
+    }
+
+    /**
+     * Cœur de l'analyse. Rapporte l'avancement à {@code progress} avant chaque
+     * étape coûteuse, ce qui permet à l'appelant d'afficher une progression
+     * réelle plutôt qu'un simple sablier.
+     */
+    public RepositoryAnalysis analyze(Path repoPath, int topHotspots, int topCoupling, ProgressListener progress)
+            throws IOException {
+        progress.onProgress("Lecture de l'historique", 1, TOTAL_STEPS);
         List<CommitInfo> commits = historyService.getHistory(repoPath);
         if (commits.isEmpty()) {
             throw new EmptyRepositoryException("Le depot ne contient aucun commit : " + repoPath);
@@ -68,13 +129,22 @@ public class AnalysisService {
         // BlameService ignorera ceux qui ont disparu du HEAD.
         List<String> blameCandidates = mostChangedPaths(commits, BLAME_CANDIDATES);
 
-        return new RepositoryAnalysis(
-                meta,
-                velocityCalculator.compute(commits),
-                authorStatsCalculator.compute(commits),
-                hotspotCalculator.compute(commits, topHotspots),
-                blameService.computeOwnership(repoPath, blameCandidates),
-                couplingCalculator.compute(commits, topCoupling, MAX_FILES_PER_COMMIT));
+        progress.onProgress("Vélocité", 2, TOTAL_STEPS);
+        List<WeeklyVelocity> velocity = velocityCalculator.compute(commits);
+
+        progress.onProgress("Répartition par auteur", 3, TOTAL_STEPS);
+        List<AuthorStats> authors = authorStatsCalculator.compute(commits);
+
+        progress.onProgress("Fichiers à risque", 4, TOTAL_STEPS);
+        List<Hotspot> hotspots = hotspotCalculator.compute(commits, topHotspots);
+
+        progress.onProgress("Bus factor", 5, TOTAL_STEPS);
+        List<FileOwnership> busFactor = blameService.computeOwnership(repoPath, blameCandidates);
+
+        progress.onProgress("Couplage", 6, TOTAL_STEPS);
+        List<FileCoupling> coupling = couplingCalculator.compute(commits, topCoupling, MAX_FILES_PER_COMMIT);
+
+        return new RepositoryAnalysis(meta, velocity, authors, hotspots, busFactor, coupling);
     }
 
     /** Les {@code limit} fichiers les plus modifiés (par nombre de changements). */

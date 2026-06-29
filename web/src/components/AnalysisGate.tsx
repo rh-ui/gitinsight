@@ -26,10 +26,28 @@ export function AnalysisGate({ children }: AnalysisGateProps) {
   }
 
   if (state.status === 'loading') {
+    const { progress } = state;
+    const pct =
+      progress && progress.total > 0
+        ? Math.round((progress.current / progress.total) * 100)
+        : null;
     return (
-      <div className="flex items-center justify-center gap-3 p-12 text-muted">
-        <Loader2 className="animate-spin text-primary" size={20} />
-        Analyse en cours…
+      <div className="flex flex-col items-center justify-center gap-4 p-12 text-muted">
+        <div className="flex items-center gap-3">
+          <Loader2 className="animate-spin text-primary" size={20} />
+          <span>
+            {progress ? progress.step : 'Analyse en cours…'}
+            {pct !== null ? ` — ${pct}%` : ''}
+          </span>
+        </div>
+        {pct !== null && (
+          <div className="h-2 w-64 max-w-full overflow-hidden rounded-full bg-border">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        )}
       </div>
     );
   }

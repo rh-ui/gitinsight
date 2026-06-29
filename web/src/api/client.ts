@@ -2,6 +2,8 @@ import axios from 'axios';
 import type {
   AnalyzeRequest,
   ApiError,
+  JobStartResponse,
+  JobStatus,
   RepositoryAnalysis,
 } from '../types/analysis';
 
@@ -41,4 +43,35 @@ export async function analyze(
     }
     throw error; // erreur non-axios inattendue : on la laisse remonter telle quelle.
   }
+}
+
+/**
+ * Démarre une analyse asynchrone via POST /api/analyze/async.
+ * Renvoie l'identifiant du job à interroger ensuite avec getAnalysisStatus.
+ */
+export async function startAnalysis(
+  req: AnalyzeRequest,
+): Promise<JobStartResponse> {
+  try {
+    const res = await http.post<JobStartResponse>('/analyze/async', req);
+    return res.data;
+  } catch (error) {
+    if (axios.isAxiosError<ApiError>(error)) {
+      const message =
+        error.response?.data?.message ??
+        error.message ??
+        "Échec du démarrage de l'analyse.";
+      throw new Error(message);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Récupère l'avancement (et le résultat final) d'un job via
+ * GET /api/analyze/status/{jobId}.
+ */
+export async function getAnalysisStatus(jobId: string): Promise<JobStatus> {
+  const res = await http.get<JobStatus>(`/analyze/status/${jobId}`);
+  return res.data;
 }

@@ -80,3 +80,25 @@ export interface FileCoupling {
   changesB: number;
   couplingScore: number; // 0..1 (Jaccard)
 }
+
+/** Réponse de POST /api/analyze/async — reflète JobStartResponse. */
+export interface JobStartResponse {
+  jobId: string;
+}
+
+/** Avancement d'une analyse en cours (étape courante sur total). */
+export interface AnalysisProgress {
+  step: string;
+  current: number;
+  total: number;
+}
+
+/** État d'un job d'analyse — reflète JobStatusResponse. */
+export interface JobStatus {
+  status: 'RUNNING' | 'DONE' | 'ERROR';
+  step: string;
+  current: number;
+  total: number;
+  analysis: RepositoryAnalysis | null; // présent quand status === 'DONE'
+  message: string | null; // présent quand status === 'ERROR'
+}

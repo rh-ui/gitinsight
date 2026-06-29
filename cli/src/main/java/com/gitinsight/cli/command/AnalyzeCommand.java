@@ -8,7 +8,9 @@ import com.gitinsight.cli.render.JsonReportWriter;
 import com.gitinsight.cli.render.ReportFormatter;
 import com.gitinsight.core.exception.EmptyRepositoryException;
 import com.gitinsight.core.exception.NotAGitRepositoryException;
+import com.gitinsight.core.exception.RemoteRepositoryException;
 import com.gitinsight.core.service.AnalysisService;
+import com.gitinsight.core.service.RepositoryResolver;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ExitCode;
@@ -23,8 +25,8 @@ public class AnalyzeCommand implements Callable<Integer> {
     @Spec
     CommandSpec spec;
 
-    @Parameters(index = "0", paramLabel = "PATH", defaultValue = ".", description = "Chemin vers le depot Git (defaut : dossier courant).")
-    Path path;
+    @Parameters(index = "0", paramLabel = "REPO", defaultValue = ".", description = "Chemin local ou URL distante (https://....git) du depot. Defaut : dossier courant.")
+    String source;
 
     @Option(names = "--json", description = "Exporte le resultat en JSON (meme schéma que l'API).")
     boolean json;
@@ -33,7 +35,7 @@ public class AnalyzeCommand implements Callable<Integer> {
             "-n" }, defaultValue = "10", description = "Nombre de hotspots a afficher (defaut : 10).")
     int top;
 
-    @Option(names = "--ascii", description = "Rendu 100% ASCII (pour les terminaux sans page de code UTF-8).")
+    @Option(names = "--ascii", description = "Rendu 100%% ASCII (pour les terminaux sans page de code UTF-8).")
     boolean ascii;
 
     private final AnalysisService service;
@@ -60,16 +62,22 @@ public class AnalyzeCommand implements Callable<Integer> {
         }
 
         try {
-            var analysis = service.analyze(path, top);
+            var analysis = service.analyze(source, top);
+
+            // Libellé affiché : l'URL telle quelle pour un dépôt distant, sinon le
+            // chemin local absolu normalisé (le clone temporaire reste interne).
+            String repoLabel = RepositoryResolver.isRemoteUrl(source)
+                    ? source
+                    : Path.of(source).toAbsolutePath().normalize().toString();
 
             String output = json
                     ? jsonWriter.toJson(analysis)
-                    : formatter.format(analysis, path, ascii);
+                    : formatter.format(analysis, repoLabel, ascii);
 
             spec.commandLine().getOut().println(output);
             return 0;
 
-        } catch (NotAGitRepositoryException | EmptyRepositoryException e) {
+        } catch (NotAGitRepositoryException | EmptyRepositoryException | RemoteRepositoryException e) {
             spec.commandLine().getErr().println("Erreur : " + e.getMessage());
             return 1;
 

@@ -13,8 +13,10 @@ const inputClasses =
   'rounded border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder-muted outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30 disabled:opacity-50';
 
 /**
- * Formulaire de lancement d'analyse : chemin du dépôt + nombre de hotspots.
- * Composant contrôlé et « bête » : il délègue l'analyse à `onAnalyze`.
+ * Formulaire de lancement d'analyse : source du dépôt + nombre de hotspots.
+ * La source peut être un chemin local OU une URL distante HTTP(S) ; le serveur
+ * clone une URL avant de l'analyser. Composant contrôlé et « bête » : il délègue
+ * l'analyse à `onAnalyze`.
  */
 export function AnalyzeForm({ onAnalyze, loading }: AnalyzeFormProps) {
   const [path, setPath] = useState('.');
@@ -31,10 +33,10 @@ export function AnalyzeForm({ onAnalyze, loading }: AnalyzeFormProps) {
         type="text"
         value={path}
         onChange={(e) => setPath(e.target.value)}
-        placeholder="Chemin du dépôt (ex. .)"
+        placeholder="Chemin local ou URL (ex. . ou https://github.com/org/repo.git)"
         disabled={loading}
         className={`${inputClasses} min-w-0 flex-1 font-mono`}
-        aria-label="Chemin du dépôt"
+        aria-label="Chemin local ou URL du dépôt"
       />
       <input
         type="number"

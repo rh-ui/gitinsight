@@ -1,6 +1,5 @@
 package com.gitinsight.cli.render;
 
-import java.nio.file.Path;
 import java.text.Normalizer;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -56,11 +55,11 @@ public class ReportFormatter {
      *              qui s'affiche correctement sur n'importe quel terminal, même sans
      *              page de code UTF-8 ; {@code false} → rendu Unicode (boîte + barres).
      */
-    public String format(RepositoryAnalysis analysis, Path repoPath, boolean ascii) {
+    public String format(RepositoryAnalysis analysis, String repoLabel, boolean ascii) {
         Glyphs g = ascii ? Glyphs.ASCII : Glyphs.UNICODE;
         var sb = new StringBuilder();
 
-        appendHeader(sb, analysis.meta(), repoPath, ascii, g);
+        appendHeader(sb, analysis.meta(), repoLabel, ascii, g);
         appendVelocity(sb, analysis.velocity(), g);
         appendAuthors(sb, analysis.authors(), g);
         appendHotspots(sb, analysis.hotspots(), g);
@@ -73,7 +72,7 @@ public class ReportFormatter {
 
     // ── En-tête ──────────────────────────────────────────────────────────────
 
-    private void appendHeader(StringBuilder sb, AnalysisMeta meta, Path repoPath, boolean ascii, Glyphs g) {
+    private void appendHeader(StringBuilder sb, AnalysisMeta meta, String repoLabel, boolean ascii, Glyphs g) {
         String title = "GitInsight " + (ascii ? "-" : "—") + " Rapport";
         sb.append("\n");
         if (ascii) {
@@ -86,7 +85,7 @@ public class ReportFormatter {
             sb.append("@|bold,cyan ╚").append(border).append("╝|@\n");
         }
         sb.append("\n");
-        sb.append(String.format("  @|bold Dépôt    :|@ %s\n", repoPath.toAbsolutePath().normalize()));
+        sb.append(String.format("  @|bold Dépôt    :|@ %s\n", repoLabel));
         sb.append(String.format("  @|bold Commits  :|@ @|yellow %d|@\n", meta.totalCommits()));
         sb.append(String.format("  @|bold Période  :|@ %s %s %s\n",
             DATE_FMT.format(meta.firstCommit()), g.arrow, DATE_FMT.format(meta.lastCommit())));
