@@ -43,6 +43,6 @@ public class CliFixtures {
                         7, 2, 3.2)
         );
 
-        return new RepositoryAnalysis(meta, velocity, authors, hotspots);
+        return new RepositoryAnalysis(meta, velocity, authors, hotspots, List.of(), List.of());
     }
 }

@@ -1,21 +1,20 @@
 package com.gitinsight.api.web.controller;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.time.Instant;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.BDDMockito.given;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.gitinsight.core.exception.NotAGitRepositoryException;
 import com.gitinsight.core.model.AnalysisMeta;
@@ -38,8 +37,7 @@ class AnalyzeControllerTest {
                 Instant.parse("2024-01-01T00:00:00Z"),
                 Instant.parse("2024-01-10T00:00:00Z"),
                 Instant.parse("2024-02-01T00:00:00Z"));
-        given(analysisService.analyze(any(), anyInt()))
-                .willReturn(new RepositoryAnalysis(meta, List.of(), List.of(), List.of()));
+        given(analysisService.analyze(any(), anyInt())).willReturn(new RepositoryAnalysis(meta, List.of(), List.of(), List.of(), List.of(), List.of()));
 
         mockMvc.perform(post("/api/analyze")
                 .contentType(MediaType.APPLICATION_JSON)
