@@ -1,8 +1,23 @@
-# GitInsight
+<div align="center">
+  <img src="logo.png" alt="GitInsight" width="120" />
 
-> Analyse l'historique d'un dépôt Git et en extrait des insights d'ingénierie :
-> vélocité, répartition du travail, dette technique, fragilité humaine et
-> dépendances cachées entre fichiers.
+  # GitInsight
+
+  **Analyseur d'historique Git : mesurez la vélocité d'une équipe, repérez les fichiers à risque, révélez les zones détenues par une seule personne et les dépendances cachées entre fichiers — en CLI ou depuis un dashboard web.**
+
+  Java 21 · Spring Boot 4 · JGit · Picocli · React 19 · TypeScript · Vite · Gradle
+
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+  ![Java](https://img.shields.io/badge/Java-21-orange.svg?logo=openjdk&logoColor=white)
+  ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F.svg?logo=springboot&logoColor=white)
+  ![JGit](https://img.shields.io/badge/JGit-6.9-F05032.svg?logo=git&logoColor=white)
+  ![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=black)
+  ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6.svg?logo=typescript&logoColor=white)
+  ![Vite](https://img.shields.io/badge/Vite-8-646CFF.svg?logo=vite&logoColor=white)
+  ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4.svg?logo=tailwindcss&logoColor=white)
+  ![Gradle](https://img.shields.io/badge/Gradle-8.14-02303A.svg?logo=gradle&logoColor=white)
+
+</div>
 
 Un dépôt Git contient bien plus que du code : il contient **l'histoire de comment
 l'équipe a construit ce code**. GitInsight lit cet historique et répond à des
@@ -28,6 +43,7 @@ Deux interfaces, **un seul moteur d'analyse** : une CLI et un dashboard web.
 - [Tests](#tests)
 - [Choix techniques](#choix-techniques-notables)
 - [Limites connues & suite](#limites-connues--suite)
+- [Licence](#licence)
 
 ---
 
@@ -370,3 +386,9 @@ back et du front, captures et GIF de démo.
 Commits au format [Conventional Commits](https://www.conventionalcommits.org/)
 (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`), une branche par phase.
 Le plan de développement complet est dans [PROJECT.md](PROJECT.md).
+
+---
+
+## Licence
+
+Distribué sous licence **MIT** — voir [LICENSE](LICENSE).
