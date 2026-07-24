@@ -381,14 +381,6 @@ back et du front, captures et GIF de démo.
 
 ---
 
-## Conventions du projet
-
-Commits au format [Conventional Commits](https://www.conventionalcommits.org/)
-(`feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`), une branche par phase.
-Le plan de développement complet est dans [PROJECT.md](PROJECT.md).
-
----
-
 ## Licence
 
 Distribué sous licence **MIT** — voir [LICENSE](LICENSE).
