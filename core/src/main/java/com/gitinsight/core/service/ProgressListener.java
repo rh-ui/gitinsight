@@ -14,7 +14,7 @@ public interface ProgressListener {
 
     /**
      * @param step    libellé lisible de l'étape qui démarre (ex. « Bus factor »).
-     * @param current index de l'étape qui démarre (0 = pré-traitement/clonage).
+     * @param current index de l'étape qui démarre (1 pour la première).
      * @param total   nombre total d'étapes.
      */
     void onProgress(String step, int current, int total);

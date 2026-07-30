@@ -1,5 +1,6 @@
 package com.gitinsight.api.service;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,7 +15,7 @@ import com.gitinsight.core.service.ProgressListener;
  * Exécute les analyses en arrière-plan et expose leur progression.
  *
  * <p>
- * Une analyse de dépôt (surtout distant : clonage + blame + couplage) peut durer
+ * Une analyse de dépôt (blame + couplage sur tout l'historique) peut durer
  * longtemps. Plutôt que de bloquer la requête HTTP, on lance le travail sur un
  * pool de threads et on renvoie immédiatement un identifiant de job. Le client
  * interroge ensuite la progression via {@link #get(String)}.
@@ -31,7 +32,6 @@ public class AnalysisJobService {
 
     /** État mutable d'un job, mis à jour par le thread d'analyse (champs volatile). */
     public static final class Job {
-        private final String id;
         private volatile Status status = Status.RUNNING;
         private volatile String step = "En file d'attente";
         private volatile int current = 0;
@@ -39,12 +39,7 @@ public class AnalysisJobService {
         private volatile RepositoryAnalysis result;
         private volatile String error;
 
-        Job(String id) {
-            this.id = id;
-        }
-
-        public String id() {
-            return id;
+        Job() {
         }
 
         public Status status() {
@@ -87,9 +82,9 @@ public class AnalysisJobService {
     }
 
     /** Démarre une analyse en arrière-plan et renvoie l'identifiant du job. */
-    public String submit(String source, int topHotspots, Integer topCoupling) {
+    public String submit(Path source, int topHotspots, Integer topCoupling) {
         String id = UUID.randomUUID().toString();
-        Job job = new Job(id);
+        Job job = new Job();
         jobs.put(id, job);
         executor.submit(() -> run(job, source, topHotspots, topCoupling));
         return id;
@@ -100,7 +95,7 @@ public class AnalysisJobService {
         return jobs.get(id);
     }
 
-    private void run(Job job, String source, int topHotspots, Integer topCoupling) {
+    private void run(Job job, Path source, int topHotspots, Integer topCoupling) {
         ProgressListener listener = (step, current, total) -> {
             job.step = step;
             job.current = current;

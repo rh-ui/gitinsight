@@ -1,9 +1,13 @@
 package com.gitinsight.api.web.controller;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
@@ -44,7 +48,7 @@ class AnalyzeControllerTest {
                                 Instant.parse("2024-01-01T00:00:00Z"),
                                 Instant.parse("2024-01-10T00:00:00Z"),
                                 Instant.parse("2024-02-01T00:00:00Z"));
-                given(analysisService.analyze(any(String.class), anyInt())).willReturn(
+                given(analysisService.analyze(any(Path.class), anyInt())).willReturn(
                                 new RepositoryAnalysis(meta, List.of(), List.of(), List.of(), List.of(), List.of()));
 
                 mockMvc.perform(post("/api/analyze")
@@ -56,7 +60,7 @@ class AnalyzeControllerTest {
 
         @Test
         void returnsBadRequestWhenPathIsNotARepository() throws Exception {
-                given(analysisService.analyze(any(String.class), anyInt()))
+                given(analysisService.analyze(any(Path.class), anyInt()))
                                 .willThrow(new NotAGitRepositoryException(
                                                 "Aucun dépôt Git trouvé à ce chemin : /undefined/path"));
 
@@ -102,7 +106,7 @@ class AnalyzeControllerTest {
                                 meta, List.of(), List.of(), List.of(),
                                 List.of(new FileOwnership("A.java", "Alice", "alice@example.com", 10, 10, 1.0)),
                                 List.of(new FileCoupling("A.java", "B.java", 3, 4, 3, 0.75)));
-                given(analysisService.analyze(any(String.class), anyInt(), anyInt())).willReturn(analysis);
+                given(analysisService.analyze(any(Path.class), anyInt(), anyInt())).willReturn(analysis);
 
                 mockMvc.perform(post("/api/analyze")
                                 .contentType(MediaType.APPLICATION_JSON)
@@ -117,13 +121,31 @@ class AnalyzeControllerTest {
 
         @Test
         void asyncReturnsJobId() throws Exception {
-                given(jobService.submit(any(String.class), anyInt(), any())).willReturn("job-123");
+                given(jobService.submit(any(Path.class), anyInt(), any())).willReturn("job-123");
 
                 mockMvc.perform(post("/api/analyze/async")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"path\":\"https://github.com/octocat/Hello-World.git\",\"topHotspots\":10}"))
+                                .content("{\"path\":\"D:/GitInsight\",\"topHotspots\":10}"))
                                 .andExpect(status().isAccepted())
                                 .andExpect(jsonPath("$.jobId").value("job-123"));
+        }
+
+        /**
+         * Windows uniquement : c'est le « : » du schéma qui rend l'URL non
+         * convertible en {@link java.nio.file.Path}. Sous Unix la même chaîne est
+         * un chemin relatif valide — la requête part alors jusqu'au core, qui la
+         * rejette avec son propre message (« Aucun dépôt Git trouvé… »), également
+         * en 400. Le contrat HTTP est donc le même partout, seul le message change.
+         */
+        @Test
+        @EnabledOnOs(OS.WINDOWS)
+        void returnsExplicitBadRequestWhenPathIsAnUrl() throws Exception {
+                mockMvc.perform(post("/api/analyze")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"path\":\"https://github.com/octocat/Hello-World.git\",\"topHotspots\":10}"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message")
+                                                .value(containsString("déjà présents sur le disque")));
         }
 
         @Test

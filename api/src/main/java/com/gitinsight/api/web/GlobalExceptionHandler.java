@@ -1,6 +1,7 @@
 package com.gitinsight.api.web;
 
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +14,6 @@ import com.gitinsight.api.exception.JobNotFoundException;
 import com.gitinsight.api.web.model.ErrorResponse;
 import com.gitinsight.core.exception.EmptyRepositoryException;
 import com.gitinsight.core.exception.NotAGitRepositoryException;
-import com.gitinsight.core.exception.RemoteRepositoryException;
 
 /**
  * Traduit les exceptions en réponses HTTP cohérentes, centralisées hors du
@@ -23,12 +23,8 @@ import com.gitinsight.core.exception.RemoteRepositoryException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /**
-     * Faute du client sur le dépôt fourni : chemin invalide, pas un dépôt Git,
-     * dépôt vide, ou URL distante invalide/injoignable (échec du clonage).
-     */
-    @ExceptionHandler({ NotAGitRepositoryException.class, EmptyRepositoryException.class,
-            RemoteRepositoryException.class })
+    /** Chemin invalide / pas un dépôt Git / dépôt sans commit → faute du client. */
+    @ExceptionHandler({ NotAGitRepositoryException.class, EmptyRepositoryException.class })
     public ResponseEntity<ErrorResponse> handleInvalidRepository(IOException e) {
         return badRequest(e.getMessage());
     }
@@ -56,7 +52,24 @@ public class GlobalExceptionHandler {
         return badRequest("Corps de requête JSON absent ou mal formé.");
     }
 
-    /** Chemin syntaxiquement invalide (InvalidPathException) et autres args illégaux. */
+    /**
+     * Chaîne non convertible en chemin de fichier — en pratique une URL collée
+     * dans le champ « dépôt » (le « : » du schéma est illégal dans un chemin
+     * Windows). On explique la contrainte plutôt que de renvoyer le
+     * « Illegal char &lt;:&gt; at index 5 » de la JVM, incompréhensible côté UI.
+     *
+     * <p>
+     * Plus spécifique que {@link #handleIllegalArgument} dont
+     * {@code InvalidPathException} hérite : Spring retient le handler le plus
+     * proche dans la hiérarchie.
+     */
+    @ExceptionHandler(InvalidPathException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPath(InvalidPathException e) {
+        return badRequest("Chemin de dépôt invalide : « " + e.getInput()
+                + " ». GitInsight analyse uniquement des dépôts déjà présents sur le disque.");
+    }
+
+    /** Autres arguments illégaux remontés depuis le core. */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
         return badRequest(e.getMessage());

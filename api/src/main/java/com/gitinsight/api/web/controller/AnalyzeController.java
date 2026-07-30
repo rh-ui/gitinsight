@@ -1,6 +1,7 @@
 package com.gitinsight.api.web.controller;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,18 +38,13 @@ public class AnalyzeController {
      * Analyse synchrone : bloque jusqu'au résultat. Conservée pour la
      * compatibilité et les outils ; le front utilise désormais la version
      * asynchrone pour les gros dépôts.
-     *
-     * <p>
-     * On passe la source (chemin local OU URL distante) en String : c'est le
-     * core qui décide de cloner ou non. Convertir une URL en Path ici lèverait
-     * InvalidPathException sous Windows (le « : » du schéma).
      */
     @PostMapping("/analyze")
     public RepositoryAnalysis analyze(@Valid @RequestBody AnalyzeRequest request) throws IOException {
-        String source = request.path();
+        Path repo = Path.of(request.path());
         return request.topCoupling() == null
-                ? analysisService.analyze(source, request.topHotspots())
-                : analysisService.analyze(source, request.topHotspots(), request.topCoupling());
+                ? analysisService.analyze(repo, request.topHotspots())
+                : analysisService.analyze(repo, request.topHotspots(), request.topCoupling());
     }
 
     /**
@@ -58,7 +54,7 @@ public class AnalyzeController {
     @PostMapping("/analyze/async")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public JobStartResponse analyzeAsync(@Valid @RequestBody AnalyzeRequest request) {
-        String jobId = jobService.submit(request.path(), request.topHotspots(), request.topCoupling());
+        String jobId = jobService.submit(Path.of(request.path()), request.topHotspots(), request.topCoupling());
         return new JobStartResponse(jobId);
     }
 

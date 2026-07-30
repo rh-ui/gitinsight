@@ -135,15 +135,14 @@ L'API et la CLI ne sont que des adaptateurs autour de lui. Conséquences concrè
 ### Le pipeline d'analyse
 
 ```
-source (chemin local | URL HTTPS)
-   └─> RepositoryResolver ──── URL ? clone complet dans un dossier temporaire
-          └─> GitHistoryService ─── parcours de l'historique + diff par commit
-                 ├─> VelocityCalculator      (pur)
-                 ├─> AuthorStatsCalculator   (pur)
-                 ├─> HotspotCalculator       (pur)
-                 ├─> BlameService            (Git : blame borné au top 50)
-                 └─> CouplingCalculator      (pur)
-                        └─> RepositoryAnalysis
+chemin d'un dépôt Git local
+   └─> GitHistoryService ─── parcours de l'historique + diff par commit
+          ├─> VelocityCalculator      (pur)
+          ├─> AuthorStatsCalculator   (pur)
+          ├─> HotspotCalculator       (pur)
+          ├─> BlameService            (Git : blame borné au top 50)
+          └─> CouplingCalculator      (pur)
+                 └─> RepositoryAnalysis
 ```
 
 Quatre des cinq calculateurs sont des fonctions pures sur la liste des commits :
@@ -212,12 +211,12 @@ Le binaire est généré dans `cli/build/install/gitinsight/bin/`.
 ### Usage
 
 ```bash
-gitinsight analyze [REPO] [--top N] [--json] [--ascii]
+gitinsight analyze [PATH] [--top N] [--json] [--ascii]
 ```
 
 | Argument / option | Effet | Défaut |
 |---|---|---|
-| `REPO` | Chemin local **ou** URL HTTP(S) d'un dépôt distant | `.` |
+| `PATH` | Chemin vers un dépôt Git local | `.` |
 | `--top`, `-n` | Nombre de hotspots affichés | `10` |
 | `--json` | Sortie JSON (même schéma que l'API) | rapport texte |
 | `--ascii` | Rendu 100 % ASCII, pour les terminaux sans UTF-8 | Unicode |
@@ -227,11 +226,11 @@ gitinsight analyze . --top 20
 ```
 
 ```bash
-gitinsight analyze https://github.com/junit-team/junit5.git --json > analyse.json
+gitinsight analyze ../junit5 --json > analyse.json
 ```
 
-**Codes de sortie :** `0` succès · `1` erreur d'analyse (dépôt introuvable, vide,
-clone échoué) · `2` erreur d'usage.
+**Codes de sortie :** `0` succès · `1` erreur d'analyse (dépôt introuvable ou
+vide) · `2` erreur d'usage.
 
 ---
 
@@ -243,8 +242,8 @@ clone échoué) · `2` erreur d'usage.
 { "path": "/chemin/vers/repo", "topHotspots": 10, "topCoupling": 30 }
 ```
 
-`path` accepte un chemin local ou une URL HTTP(S). `topCoupling` est optionnel
-(défaut : 30). Réponse `200` :
+`path` est le chemin d'un dépôt Git local, lu par le serveur. `topCoupling` est
+optionnel (défaut : 30). Réponse `200` :
 
 ```json
 {
@@ -274,11 +273,12 @@ Même corps de requête. Répond `202` immédiatement :
 `status` vaut `RUNNING`, `DONE` (le résultat complet est dans `analysis`) ou
 `ERROR` (la raison est dans `message`).
 
-**Pourquoi une version asynchrone ?** Cloner puis analyser un gros dépôt public
-prend facilement plusieurs minutes — bien au-delà du timeout d'un navigateur ou
-d'un reverse-proxy. Le mode asynchrone rend la main aussitôt et permet au
-dashboard d'afficher une progression réelle (étape par étape) plutôt qu'un
-sablier. La version synchrone reste disponible pour les scripts.
+**Pourquoi une version asynchrone ?** Sur un dépôt à l'historique fourni, le
+blame et le couplage se comptent en dizaines de secondes — de quoi frôler le
+timeout d'un navigateur ou d'un reverse-proxy. Le mode asynchrone rend la main
+aussitôt et permet au dashboard d'afficher une progression réelle (étape par
+étape) plutôt qu'un sablier. La version synchrone reste disponible pour les
+scripts.
 
 ### Erreurs
 
@@ -344,20 +344,9 @@ les **50 fichiers les plus modifiés** — statistiquement ceux où la concentra
 connaissance importe. Les fichiers disparus du HEAD sont ignorés silencieusement
 plutôt que de faire échouer l'analyse.
 
-**Les dépôts distants sont clonés en entier, pas en `--depth 1`.** Un clone
-superficiel fausserait *silencieusement* les cinq métriques : sans historique
-complet, la vélocité, le bus factor et le couplage n'ont aucun sens. Le clone part
-dans un dossier temporaire encapsulé dans un `WorkingCopy` `AutoCloseable` — le
-nettoyage est garanti par try-with-resources, y compris si l'analyse échoue.
-
-**Seul HTTP(S) est accepté comme transport distant.** L'URL vient du client :
-autoriser `file://`, `ssh://` ou `ftp://` ouvrirait une surface SSRF et un accès
-disque arbitraire. Restreindre à une liste blanche d'hôtes serait le durcissement
-suivant.
-
-**La source de dépôt circule en `String`, pas en `Path`.** Convertir une URL en
-`Path` lève `InvalidPathException` sous Windows (à cause du `:` du schéma). C'est
-`RepositoryResolver` — et lui seul — qui décide de cloner ou d'ouvrir localement.
+**L'analyse porte sur des dépôts déjà présents sur le disque.** Le moteur ne
+clone rien : il ouvre un dossier local. C'est ce qui garde le `core` sans I/O
+réseau, donc testable hors-ligne et sans timeout à gérer.
 
 **Le rendu CLI a un mode ASCII.** Les consoles Windows en page de code héritée
 massacrent les caractères Unicode ; `--ascii` replie accents et barres de

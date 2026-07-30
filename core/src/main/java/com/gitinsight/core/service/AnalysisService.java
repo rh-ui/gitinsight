@@ -38,8 +38,8 @@ public class AnalysisService {
      */
     private static final int MAX_FILES_PER_COMMIT = 50;
     /**
-     * Nombre d'étapes rapportées par {@link ProgressListener} (hors clonage, qui
-     * est l'étape 0). Sert à calculer un pourcentage côté appelant.
+     * Nombre d'étapes rapportées par {@link ProgressListener}. Sert à calculer un
+     * pourcentage côté appelant.
      */
     private static final int TOTAL_STEPS = 6;
 
@@ -49,7 +49,6 @@ public class AnalysisService {
     private final HotspotCalculator hotspotCalculator;
     private final BlameService blameService;
     private final CouplingCalculator couplingCalculator;
-    private final RepositoryResolver repositoryResolver;
 
     public AnalysisService() {
         this.historyService = new GitHistoryService();
@@ -58,50 +57,17 @@ public class AnalysisService {
         this.hotspotCalculator = new HotspotCalculator();
         this.blameService = new BlameService();
         this.couplingCalculator = new CouplingCalculator();
-        this.repositoryResolver = new RepositoryResolver();
     }
 
-    // ── Points d'entrée par source (String : chemin local OU URL distante) ──────
-
-    /**
-     * Analyse une source fournie sous forme de chaîne : soit un chemin local,
-     * soit une URL distante HTTP(S). Une URL est clonée dans un dossier
-     * temporaire, analysée, puis supprimée — le {@link WorkingCopy} géré en
-     * try-with-resources garantit le nettoyage même en cas d'échec de l'analyse.
-     *
-     * <p>
-     * Point d'entrée privilégié pour la CLI et l'API : il évite de convertir une
-     * URL en {@link Path} (ce qui lèverait {@code InvalidPathException} sous
-     * Windows à cause du « : »).
-     */
-    public RepositoryAnalysis analyze(String source, int topHotspots) throws IOException {
-        return analyze(source, topHotspots, DEFAULT_TOP_COUPLING, ProgressListener.NOOP);
-    }
-
-    public RepositoryAnalysis analyze(String source, int topHotspots, ProgressListener progress) throws IOException {
-        return analyze(source, topHotspots, DEFAULT_TOP_COUPLING, progress);
-    }
-
-    public RepositoryAnalysis analyze(String source, int topHotspots, int topCoupling) throws IOException {
-        return analyze(source, topHotspots, topCoupling, ProgressListener.NOOP);
-    }
-
-    public RepositoryAnalysis analyze(String source, int topHotspots, int topCoupling, ProgressListener progress)
-            throws IOException {
-        if (RepositoryResolver.isRemoteUrl(source)) {
-            // Étape 0 : le clonage peut être long ; on le signale avant de le lancer.
-            progress.onProgress("Clonage du dépôt", 0, TOTAL_STEPS);
-        }
-        try (WorkingCopy workingCopy = repositoryResolver.resolve(source)) {
-            return analyze(workingCopy.path(), topHotspots, topCoupling, progress);
-        }
-    }
-
-    // ── Points d'entrée par chemin local (Path) ────────────────────────────────
+    // ── Points d'entrée ────────────────────────────────────────────────────────
 
     /** Surcharge de compatibilité : applique le défaut de couplage. */
     public RepositoryAnalysis analyze(Path repoPath, int topHotspots) throws IOException {
         return analyze(repoPath, topHotspots, DEFAULT_TOP_COUPLING, ProgressListener.NOOP);
+    }
+
+    public RepositoryAnalysis analyze(Path repoPath, int topHotspots, ProgressListener progress) throws IOException {
+        return analyze(repoPath, topHotspots, DEFAULT_TOP_COUPLING, progress);
     }
 
     public RepositoryAnalysis analyze(Path repoPath, int topHotspots, int topCoupling) throws IOException {
