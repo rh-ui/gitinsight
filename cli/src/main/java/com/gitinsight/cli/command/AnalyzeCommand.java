@@ -8,9 +8,7 @@ import com.gitinsight.cli.render.JsonReportWriter;
 import com.gitinsight.cli.render.ReportFormatter;
 import com.gitinsight.core.exception.EmptyRepositoryException;
 import com.gitinsight.core.exception.NotAGitRepositoryException;
-import com.gitinsight.core.exception.RemoteRepositoryException;
 import com.gitinsight.core.service.AnalysisService;
-import com.gitinsight.core.service.RepositoryResolver;
 
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ExitCode;
@@ -25,8 +23,8 @@ public class AnalyzeCommand implements Callable<Integer> {
     @Spec
     CommandSpec spec;
 
-    @Parameters(index = "0", paramLabel = "REPO", defaultValue = ".", description = "Chemin local ou URL distante (https://....git) du depot. Defaut : dossier courant.")
-    String source;
+    @Parameters(index = "0", paramLabel = "PATH", defaultValue = ".", description = "Chemin vers le depot Git (defaut : dossier courant).")
+    Path path;
 
     @Option(names = "--json", description = "Exporte le resultat en JSON (meme schéma que l'API).")
     boolean json;
@@ -62,13 +60,9 @@ public class AnalyzeCommand implements Callable<Integer> {
         }
 
         try {
-            var analysis = service.analyze(source, top);
+            var analysis = service.analyze(path, top);
 
-            // Libellé affiché : l'URL telle quelle pour un dépôt distant, sinon le
-            // chemin local absolu normalisé (le clone temporaire reste interne).
-            String repoLabel = RepositoryResolver.isRemoteUrl(source)
-                    ? source
-                    : Path.of(source).toAbsolutePath().normalize().toString();
+            String repoLabel = path.toAbsolutePath().normalize().toString();
 
             String output = json
                     ? jsonWriter.toJson(analysis)
@@ -77,7 +71,7 @@ public class AnalyzeCommand implements Callable<Integer> {
             spec.commandLine().getOut().println(output);
             return 0;
 
-        } catch (NotAGitRepositoryException | EmptyRepositoryException | RemoteRepositoryException e) {
+        } catch (NotAGitRepositoryException | EmptyRepositoryException e) {
             spec.commandLine().getErr().println("Erreur : " + e.getMessage());
             return 1;
 

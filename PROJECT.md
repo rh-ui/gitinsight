@@ -98,7 +98,7 @@ Les métriques 4 et 5 sont les plus différenciantes : peu de projets les font.
 **But :** transformer les données brutes en insights et les exposer.
 - Implémenter Vélocité, Répartition par auteur, Hotspots dans `core`.
 - Tests unitaires sur chaque calcul (avec un petit repo de test fixe).
-- Monter l'API Spring Boot : `POST /api/analyze` reçoit un chemin/URL de repo,
+- Monter l'API Spring Boot : `POST /api/analyze` reçoit un chemin de repo,
   renvoie un JSON structuré avec toutes les métriques.
 - **Livrable :** appel REST → JSON d'analyse complet.
 

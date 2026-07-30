@@ -3,6 +3,7 @@ package com.gitinsight.cli.command;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ class AnalyzeCommandTest {
     private static AnalysisService stubReturningSample(int[] capturedTop, boolean[] called) {
         return new AnalysisService() {
             @Override
-            public RepositoryAnalysis analyze(String source, int topHotspots) {
+            public RepositoryAnalysis analyze(Path repoPath, int topHotspots) {
                 if (called != null) called[0] = true;
                 if (capturedTop != null) capturedTop[0] = topHotspots;
                 return CliFixtures.sampleAnalysis();
@@ -98,7 +99,7 @@ class AnalyzeCommandTest {
     void invalidRepositoryExitsOneWithMessageOnStderr() {
         var failing = new AnalysisService() {
             @Override
-            public RepositoryAnalysis analyze(String source, int topHotspots) throws IOException {
+            public RepositoryAnalysis analyze(Path repoPath, int topHotspots) throws IOException {
                 throw new NotAGitRepositoryException("Aucun dépôt Git à ce chemin");
             }
         };
